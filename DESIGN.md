@@ -38,14 +38,14 @@ visual direction — read and preserve them on every subsequent build; do not
 re-derive a new direction. The first UI pass must fill these fields in as
 part of that build, not leave them as an empty template.
 
-- Product mode: `operate` | `read` | `persuade` | `experience`
-- Audience and cadence:
-- Visual world (name + the feeling it creates):
-- Palette family + neutral undertone:
-- Type treatment:
-- Composition:
-- Shape language:
-- Anti-references (defaults this app must not drift toward):
+- Product mode: `operate`
+- Audience and cadence: Crypto-native traders and token creators, checking markets and configuring launches throughout the day.
+- Visual world (name + the feeling it creates): Graphite trading terminal — immediate, exact, and quietly alive.
+- Palette family + neutral undertone: Vivid lime over near-black graphite; green and red reserved for market movement.
+- Type treatment: Grotesk sans with tabular lining numerals for every price and metric.
+- Composition: Dense discovery grid and focused four-step launch workbench.
+- Shape language: Crisp compact controls, 6–10px corners, hairline borders, and a single luminous curve motif.
+- Anti-references (defaults this app must not drift toward): Marketing-site hero excess, generic SaaS card stacks, purple gradients, decorative glass effects, and unaligned numeric columns.
 
 ## Agent-native is structural, not visual
 
@@ -60,7 +60,7 @@ Surface And Page Boundaries so the surfaces are wired correctly.
 ## Guardrails
 
 - Keep semantic token names and shared component seams intact; express the
-  direction through token *values*, type, spacing, and composition — not by
+  direction through token _values_, type, spacing, and composition — not by
   forking the design system.
 - Density comes from data, not prose. Subtract explanatory chrome; never
   subtract the visual craft that makes the app impressive.
