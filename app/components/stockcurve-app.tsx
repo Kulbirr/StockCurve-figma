@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Form, Link, useLocation } from "react-router";
 
 export type MarketToken = {
   symbol: string;
@@ -134,9 +134,10 @@ export function CurveMark({ className = "" }: { className?: string }) {
 }
 
 export function StockCurveHeader({ active = "Discover" }: { active?: string }) {
+  const search = new URLSearchParams(useLocation().search).get("search") ?? "";
   const links = [
     { label: "Discover", href: "/" },
-    { label: "Launch token", href: "/launch" },
+    { label: "Launch", href: "/launch" },
     { label: "Presets", href: "/presets" },
     { label: "Portfolio", href: "/portfolio" },
   ];
@@ -145,7 +146,7 @@ export function StockCurveHeader({ active = "Discover" }: { active?: string }) {
       <Link className="sc-brand" to="/" aria-label="StockCurve home">
         <CurveMark className="sc-brand-mark" />
         <span>
-          stock<span className="sc-brand-light">curve</span>
+          Stock<span className="sc-brand-light">Curve</span>
         </span>
       </Link>
       <nav className="sc-nav" aria-label="Main navigation">
@@ -159,6 +160,15 @@ export function StockCurveHeader({ active = "Discover" }: { active?: string }) {
           </Link>
         ))}
       </nav>
+      <Form className="sc-global-search" action="/" method="get" role="search">
+        <span aria-hidden="true">⌕</span>
+        <input
+          name="search"
+          defaultValue={search}
+          placeholder="Search tokens or tickers…"
+          aria-label="Search tokens or tickers"
+        />
+      </Form>
       <WalletButton />
     </header>
   );

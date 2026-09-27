@@ -42,7 +42,7 @@ part of that build, not leave them as an empty template.
 - Audience and cadence: Crypto-native traders and token creators, checking markets and configuring launches throughout the day.
 - Visual world (name + the feeling it creates): Graphite trading terminal — immediate, exact, and quietly alive.
 - Palette family + neutral undertone: Vivid lime over near-black graphite; green and red reserved for market movement.
-- Type treatment: Grotesk sans with tabular lining numerals for every price and metric.
+- Type treatment: Inter for interface copy; JetBrains Mono for prices, tickers, and tabular lining numerals.
 - Composition: Dense discovery grid and focused four-step launch workbench.
 - Shape language: Crisp compact controls, 6–10px corners, hairline borders, and a single luminous curve motif.
 - Anti-references (defaults this app must not drift toward): Marketing-site hero excess, generic SaaS card stacks, purple gradients, decorative glass effects, and unaligned numeric columns.

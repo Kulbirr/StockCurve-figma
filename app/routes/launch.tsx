@@ -114,7 +114,7 @@ export default function LaunchRoute() {
 
   return (
     <div className="sc-app-shell">
-      <StockCurveHeader active="Launch token" />
+      <StockCurveHeader active="Launch" />
       <main className="sc-page sc-launch-page">
         <div className="sc-launch-top">
           <Link to="/" className="sc-back-link">

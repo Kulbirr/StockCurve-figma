@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 import {
   marketTokens,
@@ -27,7 +27,8 @@ export function meta() {
 export default function DiscoverRoute() {
   const [pairFilter, setPairFilter] = useState<Filter>("All");
   const [sort, setSort] = useState<Sort>("Hot");
-  const [query, setQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get("search") ?? "";
   const tokens = useMemo(() => {
     const visible = marketTokens.filter((token) => {
       const pairMatch =
@@ -99,17 +100,6 @@ export default function DiscoverRoute() {
               <span className="sc-live-dot" /> Live market{" "}
               <span className="sc-market-count">{tokens.length} tokens</span>
             </div>
-            <label className="sc-search">
-              <span className="sc-search-icon" aria-hidden="true">
-                ⌕
-              </span>
-              <input
-                aria-label="Search tokens"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search tokens"
-              />
-            </label>
           </div>
           <div className="sc-market-tools">
             <div className="sc-filter-group" aria-label="Quote pair">
@@ -196,7 +186,7 @@ export default function DiscoverRoute() {
               <button
                 type="button"
                 onClick={() => {
-                  setQuery("");
+                  setSearchParams({});
                   setPairFilter("All");
                 }}
               >
