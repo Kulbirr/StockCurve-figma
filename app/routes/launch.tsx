@@ -1,46 +1,43 @@
-import { useState, type ChangeEvent, type PointerEvent } from "react";
-import { Link } from "react-router";
+import { useMemo, useState, type ChangeEvent } from "react";
+import { Link, useSearchParams } from "react-router";
 
-import {
-  CurveMark,
-  QuoteBadge,
-  StockCurveHeader,
-} from "@/components/stockcurve-app";
+import { StockCurveHeader } from "@/components/stockcurve-app";
 
-type Preset = "Flat" | "Exponential" | "Long" | "Gentle";
-type Pair = "SOL" | "USDC" | "AAPLx" | "NVDAx";
+type TokenType = "Memecoin" | "Tokenized Stock";
+type CurvePreset =
+  | "Standard Curve"
+  | "Fast Graduation"
+  | "Slow Burn"
+  | "Stock Tracker";
 
-const presets: Preset[] = ["Flat", "Exponential", "Long", "Gentle"];
-const pairs: Pair[] = ["SOL", "USDC", "AAPLx", "NVDAx"];
-const curvePoints: Record<Preset, [number, number][]> = {
-  Flat: [
-    [18, 181],
-    [162, 151],
-    [300, 116],
-    [438, 82],
-    [582, 42],
-  ],
-  Exponential: [
-    [18, 186],
-    [162, 178],
-    [300, 155],
-    [438, 104],
-    [582, 28],
-  ],
-  Long: [
-    [18, 181],
-    [162, 163],
-    [300, 132],
-    [438, 88],
-    [582, 28],
-  ],
-  Gentle: [
-    [18, 181],
-    [162, 137],
-    [300, 101],
-    [438, 68],
-    [582, 39],
-  ],
+const presetValues: Record<
+  CurvePreset,
+  { initial: number; steepness: number; target: number; path: string }
+> = {
+  "Standard Curve": {
+    initial: 0.0000042,
+    steepness: 1.8,
+    target: 69000,
+    path: "M8 144 C74 139 121 123 178 104 S296 66 392 15",
+  },
+  "Fast Graduation": {
+    initial: 0.0000068,
+    steepness: 3.2,
+    target: 42000,
+    path: "M8 144 C45 135 88 97 145 70 S294 28 392 12",
+  },
+  "Slow Burn": {
+    initial: 0.0000021,
+    steepness: 0.6,
+    target: 120000,
+    path: "M8 144 C105 139 202 112 392 52",
+  },
+  "Stock Tracker": {
+    initial: 0.0000042,
+    steepness: 1.5,
+    target: 750000,
+    path: "M8 144 C78 139 104 120 147 106 S226 65 267 53 S333 38 392 14",
+  },
 };
 
 export function meta() {
@@ -48,522 +45,429 @@ export function meta() {
 }
 
 export default function LaunchRoute() {
-  const [step, setStep] = useState(1);
+  const [searchParams] = useSearchParams();
+  const requestedPreset = searchParams.get("preset") as CurvePreset | null;
   const [name, setName] = useState("");
   const [ticker, setTicker] = useState("");
   const [description, setDescription] = useState("");
-  const [imagePreview, setImagePreview] = useState("");
-  const [preset, setPreset] = useState<Preset>("Exponential");
-  const [points, setPoints] = useState(curvePoints.Exponential);
-  const [pair, setPair] = useState<Pair>("SOL");
-  const [fee, setFee] = useState(1);
-  const [threshold, setThreshold] = useState("85");
-  const [error, setError] = useState("");
-  const [launchState, setLaunchState] = useState<
-    "idle" | "signing" | "success"
-  >("idle");
+  const [tokenType, setTokenType] = useState<TokenType>("Memecoin");
+  const [underlying, setUnderlying] = useState("");
+  const [preset, setPreset] = useState<CurvePreset>(
+    requestedPreset && requestedPreset in presetValues
+      ? requestedPreset
+      : "Standard Curve",
+  );
+  const [customCurve, setCustomCurve] = useState(
+    searchParams.get("mode") === "custom",
+  );
+  const [initialPrice, setInitialPrice] = useState(
+    presetValues[
+      requestedPreset && requestedPreset in presetValues
+        ? requestedPreset
+        : "Standard Curve"
+    ].initial,
+  );
+  const [steepness, setSteepness] = useState(
+    presetValues[
+      requestedPreset && requestedPreset in presetValues
+        ? requestedPreset
+        : "Standard Curve"
+    ].steepness,
+  );
+  const [target, setTarget] = useState(
+    presetValues[
+      requestedPreset && requestedPreset in presetValues
+        ? requestedPreset
+        : "Standard Curve"
+    ].target,
+  );
+  const [image, setImage] = useState("");
+  const [notice, setNotice] = useState("");
+  const curvePath = useMemo(() => {
+    const bend = Math.max(0.55, Math.min(4.8, steepness));
+    const controlY = Math.round(128 - bend * 20);
+    const endY = Math.max(10, Math.round(62 - bend * 13));
+    return customCurve
+      ? `M8 144 C96 144 165 ${controlY} 235 ${controlY} S331 ${endY + 10} 392 ${endY}`
+      : presetValues[preset].path;
+  }, [customCurve, preset, steepness]);
 
-  const selectPreset = (value: Preset) => {
+  const changePreset = (value: CurvePreset) => {
     setPreset(value);
-    setPoints(curvePoints[value].map(([x, y]) => [x, y]));
-  };
-  const validateAndContinue = () => {
-    if (step === 1 && !name.trim()) {
-      setError("Add a token name to continue.");
-      return;
-    }
-    if (step === 1 && !/^[a-zA-Z0-9]{2,10}$/.test(ticker)) {
-      setError("Ticker must be 2–10 letters or numbers.");
-      return;
-    }
-    if (
-      step === 3 &&
-      (!Number(threshold) || Number(threshold) < 10 || Number(threshold) > 99)
-    ) {
-      setError("Graduation threshold must be between 10% and 99%.");
-      return;
-    }
-    setError("");
-    setStep((current) => Math.min(4, current + 1));
+    setInitialPrice(presetValues[value].initial);
+    setSteepness(presetValues[value].steepness);
+    setTarget(presetValues[value].target);
+    setCustomCurve(false);
   };
   const handleImage = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) setImagePreview(URL.createObjectURL(file));
+    if (file) setImage(URL.createObjectURL(file));
   };
-  const movePoint = (index: number, event: PointerEvent<SVGSVGElement>) => {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const desiredY = ((event.clientY - bounds.top) / bounds.height) * 220;
-    setPoints((current) => {
-      const y = Math.max(
-        current[index + 1][1] + 2,
-        Math.min(current[index - 1][1] - 2, desiredY),
-      );
-      return current.map((point, pointIndex) =>
-        pointIndex === index ? [point[0], y] : point,
-      );
-    });
-  };
-  const projectedPrice = (percent: number) => {
-    const y = points[Math.min(4, Math.round(percent / 25))]?.[1] ?? 186;
-    return `$${(0.0001 + (186 - y) * 0.00019).toFixed(4)}`;
-  };
-  const launch = () => {
-    setLaunchState("signing");
-    window.setTimeout(() => setLaunchState("success"), 1100);
+  const handleLaunch = () => {
+    if (!name.trim()) return setNotice("Add a token name before launching.");
+    if (!/^[A-Z0-9]{2,10}$/.test(ticker))
+      return setNotice("Enter a 2–10 character ticker.");
+    if (tokenType === "Tokenized Stock" && !underlying)
+      return setNotice("Enter the underlying stock ticker.");
+    setNotice("Wallet adapter unavailable. No token was launched.");
   };
 
   return (
     <div className="sc-app-shell">
       <StockCurveHeader active="Launch" />
-      <main className="sc-page sc-launch-page">
-        <div className="sc-launch-top">
-          <Link to="/" className="sc-back-link">
-            ← Discover
-          </Link>
-          <span className="sc-preview-mode">PREVIEW MODE</span>
-        </div>
-        <div className="sc-launch-layout">
-          <aside className="sc-stepper" aria-label="Launch steps">
-            {[
-              [1, "Token"],
-              [2, "Curve"],
-              [3, "Market"],
-              [4, "Review"],
-            ].map(([number, label]) => {
-              const index = Number(number);
-              return (
-                <button
-                  type="button"
-                  key={number}
-                  onClick={() => {
-                    if (index < step) {
-                      setStep(index);
-                      setError("");
-                    }
-                  }}
-                  className={`sc-step ${step === index ? "current" : ""} ${step > index ? "complete" : ""}`}
-                >
-                  <span>{step > index ? "✓" : number}</span>
-                  {label}
-                </button>
-              );
-            })}
-          </aside>
-
-          <section className="sc-launch-content">
-            {launchState === "success" ? (
-              <div className="sc-launch-success">
-                <span className="sc-success-icon">
-                  <CurveMark />
-                </span>
-                <div className="sc-eyebrow">LAUNCH PREVIEW COMPLETE</div>
-                <h1>{name || "Your token"} is ready.</h1>
-                <p>
-                  No transaction was sent. Connect a wallet integration to
-                  launch on Solana.
-                </p>
-                <div className="sc-success-summary">
-                  <span>${ticker || "TOKEN"}</span>
-                  <QuoteBadge pair={pair} />
-                  <span>{preset} curve</span>
+      <main className="sc-launch-builder">
+        <section className="sc-launch-page-heading">
+          <h1>
+            Launch a New <em>Token</em>
+          </h1>
+          <p>
+            Deploy a fair-launch bonding curve. No presale, no team allocation.
+          </p>
+        </section>
+        <div className="sc-launch-builder-grid">
+          <form
+            className="sc-launch-builder-form"
+            onSubmit={(event) => event.preventDefault()}
+          >
+            <section className="sc-builder-section">
+              <div className="sc-builder-section-head">
+                <span className="sc-section-glyph">◈</span>
+                <div>
+                  <h2>Token Identity</h2>
+                  <p>Basic details that define your token</p>
                 </div>
-                <div className="sc-launch-actions">
-                  <Link to="/" className="sc-button sc-button-primary">
-                    Explore tokens
-                  </Link>
+              </div>
+              <div className="sc-builder-identity-row">
+                <label className="sc-builder-image">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={handleImage}
+                    aria-label="Upload token image"
+                  />
+                  {image ? (
+                    <img src={image} alt="Token image preview" />
+                  ) : (
+                    <>
+                      <span>▧</span>
+                      <small>Upload image</small>
+                    </>
+                  )}
+                </label>
+                <label className="sc-builder-field">
+                  <span>Token Name</span>
+                  <input
+                    value={name}
+                    maxLength={32}
+                    onChange={(event) => setName(event.target.value)}
+                    placeholder="e.g. Apple Curve"
+                  />
+                </label>
+                <label className="sc-builder-field">
+                  <span>Ticker / Symbol</span>
+                  <div className="sc-builder-input-prefix">
+                    <b>$</b>
+                    <input
+                      value={ticker}
+                      maxLength={10}
+                      onChange={(event) =>
+                        setTicker(
+                          event.target.value
+                            .toUpperCase()
+                            .replace(/[^A-Z0-9]/g, ""),
+                        )
+                      }
+                      placeholder="AAPLX"
+                    />
+                  </div>
+                </label>
+              </div>
+              <label className="sc-builder-field sc-builder-description">
+                <span>Description</span>
+                <textarea
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  maxLength={240}
+                  placeholder="Tell traders what this token is about…"
+                  rows={3}
+                />
+              </label>
+            </section>
+
+            <section className="sc-builder-section">
+              <div className="sc-builder-section-head">
+                <span className="sc-section-glyph">◫</span>
+                <div>
+                  <h2>Token Type</h2>
+                  <p>Choose what your curve represents</p>
+                </div>
+              </div>
+              <div className="sc-token-type-options">
+                {(["Memecoin", "Tokenized Stock"] as const).map((type) => (
                   <button
-                    className="sc-button sc-button-secondary"
                     type="button"
+                    key={type}
+                    aria-pressed={tokenType === type}
+                    className={tokenType === type ? "selected" : ""}
                     onClick={() => {
-                      setLaunchState("idle");
-                      setStep(1);
+                      setTokenType(type);
+                      setTicker(type === "Tokenized Stock" ? "AAPLX" : ticker);
+                      setUnderlying(type === "Tokenized Stock" ? "AAPL" : "");
                     }}
                   >
-                    Create another
+                    <span className="sc-type-icon">
+                      {type === "Memecoin" ? "◈" : "⌁"}
+                    </span>
+                    <strong>{type}</strong>
+                    <small>
+                      {type === "Memecoin"
+                        ? "Pure bonding curve token. Fair launch, community driven."
+                        : "Curve references a real-world stock's price action."}
+                    </small>
                   </button>
-                </div>
+                ))}
               </div>
-            ) : (
-              <>
-                <div className="sc-step-heading">
-                  <div className="sc-step-counter">STEP 0{step} / 04</div>
-                  <h1>
-                    {
-                      [
-                        "Token details",
-                        "Design your curve",
-                        "Market setup",
-                        "Review launch",
-                      ][step - 1]
+              {tokenType === "Tokenized Stock" && (
+                <label className="sc-builder-field sc-underlying-field">
+                  <span>Underlying Ticker</span>
+                  <input
+                    value={underlying}
+                    maxLength={6}
+                    onChange={(event) =>
+                      setUnderlying(
+                        event.target.value.toUpperCase().replace(/[^A-Z]/g, ""),
+                      )
                     }
-                  </h1>
+                    placeholder="E.G. AAPL, TSLA, NVDA"
+                  />
+                  <small>
+                    ⓘ Tracks real-world stock price as a reference curve
+                  </small>
+                </label>
+              )}
+            </section>
+
+            <section className="sc-builder-section sc-curve-settings">
+              <div className="sc-builder-section-head">
+                <span className="sc-section-glyph">⌁</span>
+                <div>
+                  <h2>Bonding Curve Settings</h2>
+                  <p>Define the price trajectory of your curve</p>
                 </div>
-
-                {step === 1 && (
-                  <div className="sc-form-fields">
-                    <div className="sc-form-row">
-                      <label className="sc-field">
-                        <span>Token name</span>
-                        <input
-                          autoFocus
-                          value={name}
-                          onChange={(event) => setName(event.target.value)}
-                          maxLength={32}
-                          placeholder="e.g. Moss Protocol"
-                        />
-                      </label>
-                      <label className="sc-field">
-                        <span>Ticker</span>
-                        <div className="sc-ticker-input">
-                          <b>$</b>
-                          <input
-                            value={ticker}
-                            onChange={(event) =>
-                              setTicker(
-                                event.target.value
-                                  .toUpperCase()
-                                  .replace(/[^A-Z0-9]/g, "")
-                                  .slice(0, 10),
-                              )
-                            }
-                            placeholder="MOSS"
-                          />
-                        </div>
-                      </label>
-                    </div>
-                    <label className="sc-field">
-                      <span>
-                        Description <small>OPTIONAL</small>
-                      </span>
-                      <textarea
-                        value={description}
-                        onChange={(event) => setDescription(event.target.value)}
-                        maxLength={240}
-                        placeholder="What is this token about?"
-                        rows={3}
-                      />
-                    </label>
-                    <label className="sc-upload">
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        onChange={handleImage}
-                      />
-                      {imagePreview ? (
-                        <img src={imagePreview} alt="Token artwork preview" />
-                      ) : (
-                        <span className="sc-upload-icon">+</span>
-                      )}
-                      <span>
-                        <b>
-                          {imagePreview ? "Replace image" : "Add token image"}
-                        </b>
-                        <small>PNG, JPG or WEBP · square works best</small>
-                      </span>
-                    </label>
-                  </div>
-                )}
-
-                {step === 2 && (
-                  <div className="sc-curve-editor">
-                    <div className="sc-preset-row">
-                      {presets.map((item) => (
-                        <button
-                          key={item}
-                          type="button"
-                          aria-pressed={preset === item}
-                          onClick={() => selectPreset(item)}
-                          className={`sc-preset ${preset === item ? "selected" : ""}`}
-                        >
-                          <svg viewBox="0 0 52 27" aria-hidden="true">
-                            <path
-                              d={
-                                item === "Flat"
-                                  ? "M2 23C14 21 23 17 50 3"
-                                  : item === "Long"
-                                    ? "M2 23C23 21 30 15 50 3"
-                                    : item === "Gentle"
-                                      ? "M2 23C10 17 26 9 50 3"
-                                      : "M2 23C27 23 33 22 38 15C43 8 46 5 50 3"
-                              }
-                            />
-                          </svg>
-                          <span>{item}</span>
-                        </button>
-                      ))}
-                    </div>
-                    <div className="sc-chart-panel">
-                      <div className="sc-chart-title">
-                        <span>PRICE CURVE</span>
-                        <span className="sc-number">
-                          {ticker ? `$${ticker}` : "TOKEN"} / {pair}
-                        </span>
-                      </div>
-                      <svg
-                        className="sc-curve-chart"
-                        viewBox="0 0 600 220"
-                        preserveAspectRatio="none"
-                        aria-label="Interactive bonding curve; drag a point to adjust the curve"
-                        onPointerDown={(event) => {
-                          event.currentTarget.setPointerCapture(
-                            event.pointerId,
-                          );
-                          movePoint(
-                            Math.min(
-                              3,
-                              Math.max(
-                                1,
-                                Math.round(
-                                  ((event.clientX -
-                                    event.currentTarget.getBoundingClientRect()
-                                      .left) /
-                                    event.currentTarget.getBoundingClientRect()
-                                      .width) *
-                                    4,
-                                ),
-                              ),
-                            ),
-                            event,
-                          );
-                        }}
-                        onPointerMove={(event) => {
-                          if (event.buttons === 1)
-                            movePoint(
-                              Math.min(
-                                3,
-                                Math.max(
-                                  1,
-                                  Math.round(
-                                    ((event.clientX -
-                                      event.currentTarget.getBoundingClientRect()
-                                        .left) /
-                                      event.currentTarget.getBoundingClientRect()
-                                        .width) *
-                                      4,
-                                  ),
-                                ),
-                              ),
-                              event,
-                            );
-                        }}
-                      >
-                        {[0, 1, 2, 3, 4].map((line) => (
-                          <line
-                            key={line}
-                            x1="18"
-                            x2="582"
-                            y1={24 + line * 39}
-                            y2={24 + line * 39}
-                            className="sc-grid-line"
-                          />
-                        ))}
-                        <path
-                          d={`M ${points.map(([x, y]) => `${x},${y}`).join(" L ")} L 582,204 L 18,204 Z`}
-                          className="sc-chart-fill"
-                        />
-                        <path
-                          d={`M ${points.map(([x, y]) => `${x},${y}`).join(" L ")}`}
-                          className="sc-chart-stroke"
-                        />
-                        {points.slice(1, 4).map(([x, y], index) => (
-                          <circle
-                            key={index}
-                            cx={x}
-                            cy={y}
-                            r="6"
-                            className="sc-chart-point"
-                          />
-                        ))}
-                        <text x="18" y="216">
-                          0%
-                        </text>
-                        <text x="545" y="216">
-                          100%
-                        </text>
-                      </svg>
-                      <div className="sc-chart-hint">
-                        Drag a point to fine-tune
-                      </div>
-                    </div>
-                    <div className="sc-projection-grid">
-                      {[25, 50, 75, 100].map((amount) => (
-                        <div key={amount}>
-                          <span>{amount}% filled</span>
-                          <strong className="sc-number">
-                            {projectedPrice(amount)}
-                          </strong>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {step === 3 && (
-                  <div className="sc-market-form">
-                    <div className="sc-field-label">Quote pair</div>
-                    <div className="sc-pair-grid">
-                      {pairs.map((value) => (
-                        <button
-                          key={value}
-                          className={`sc-pair-option ${pair === value ? "selected" : ""}`}
-                          type="button"
-                          aria-pressed={pair === value}
-                          onClick={() => setPair(value)}
-                        >
-                          <QuoteBadge pair={value} />
-                          <span>
-                            {value.endsWith("x")
-                              ? `${value.slice(0, -1)} tokenized stock`
-                              : value === "SOL"
-                                ? "Solana"
-                                : "USD Coin"}
-                          </span>
-                          <i>{pair === value ? "✓" : ""}</i>
-                        </button>
-                      ))}
-                    </div>
-                    <label className="sc-range-field">
-                      <span>
-                        Creator fee <b>{fee.toFixed(1)}%</b>
-                      </span>
-                      <input
-                        type="range"
-                        min="0.5"
-                        max="5"
-                        step="0.1"
-                        value={fee}
-                        onChange={(event) => setFee(Number(event.target.value))}
-                      />
-                      <small>Fee on each trade, earned by the creator.</small>
-                    </label>
-                    <label className="sc-field sc-threshold-field">
-                      <span>Graduation threshold</span>
-                      <div className="sc-threshold-input">
-                        <input
-                          value={threshold}
-                          onChange={(event) =>
-                            setThreshold(
-                              event.target.value.replace(/[^0-9]/g, ""),
-                            )
-                          }
-                          inputMode="numeric"
-                        />
-                        <span>% market cap filled</span>
-                      </div>
-                    </label>
-                  </div>
-                )}
-
-                {step === 4 && (
-                  <div className="sc-review">
-                    <div className="sc-review-token">
-                      <span className="sc-review-avatar">
-                        {imagePreview ? (
-                          <img src={imagePreview} alt="" />
-                        ) : (
-                          <span>{ticker.slice(0, 1) || <CurveMark />}</span>
-                        )}
-                      </span>
-                      <div>
-                        <strong>{name || "Untitled token"}</strong>
-                        <span>${ticker || "TICKER"}</span>
-                      </div>
-                      <QuoteBadge pair={pair} />
-                    </div>
-                    {description && (
-                      <p className="sc-review-description">{description}</p>
-                    )}
-                    <div className="sc-review-list">
-                      <div>
-                        <span>Bonding curve</span>
-                        <strong>{preset}</strong>
-                      </div>
-                      <div>
-                        <span>Creator fee</span>
-                        <strong className="sc-number">{fee.toFixed(1)}%</strong>
-                      </div>
-                      <div>
-                        <span>Graduation threshold</span>
-                        <strong className="sc-number">{threshold}%</strong>
-                      </div>
-                      <div>
-                        <span>Estimated network fee</span>
-                        <strong className="sc-number">~0.02 SOL</strong>
-                      </div>
-                      <div>
-                        <span>Launch cost</span>
-                        <strong className="sc-number">~0.1 SOL</strong>
-                      </div>
-                    </div>
-                    <div className="sc-review-notice">
-                      Preview only. No wallet signature or transaction will be
-                      requested.
-                    </div>
-                  </div>
-                )}
-
-                {error && (
-                  <p className="sc-form-error" role="alert">
-                    {error}
-                  </p>
-                )}
-                <div className="sc-launch-actions">
-                  {step > 1 && (
-                    <button
-                      className="sc-button sc-button-secondary"
-                      type="button"
-                      onClick={() => {
-                        setStep((current) => current - 1);
-                        setError("");
-                      }}
-                    >
-                      Back
-                    </button>
-                  )}
-                  {step < 4 ? (
-                    <button
-                      className="sc-button sc-button-primary"
-                      type="button"
-                      onClick={validateAndContinue}
-                    >
-                      Continue <span aria-hidden="true">→</span>
-                    </button>
-                  ) : (
-                    <button
-                      className="sc-button sc-button-primary"
-                      type="button"
-                      onClick={launch}
-                      disabled={launchState === "signing"}
-                    >
-                      {launchState === "signing" ? (
-                        <>
-                          <span className="sc-spinner" /> Waiting for signature…
-                        </>
-                      ) : (
-                        "Launch token"
-                      )}
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
-          </section>
-          <aside className="sc-launch-aside">
-            <div className="sc-aside-card">
-              <span className="sc-aside-kicker">BUILT ON</span>
-              <strong>Meteora DBC</strong>
-              <span className="sc-aside-copy">
-                Custom curves. Real markets.
-              </span>
-              <div className="sc-aside-logo">
-                <CurveMark />
               </div>
+              <div className="sc-curve-mode-switch">
+                <button
+                  type="button"
+                  className={!customCurve ? "selected" : ""}
+                  onClick={() => setCustomCurve(false)}
+                >
+                  Use a Preset
+                </button>
+                <button
+                  type="button"
+                  className={customCurve ? "selected" : ""}
+                  onClick={() => setCustomCurve(true)}
+                >
+                  Custom Curve
+                </button>
+              </div>
+              {!customCurve && (
+                <label className="sc-builder-field sc-preset-select">
+                  <span>Curve Preset</span>
+                  <select
+                    value={preset}
+                    onChange={(event) =>
+                      changePreset(event.target.value as CurvePreset)
+                    }
+                  >
+                    {Object.keys(presetValues).map((option) => (
+                      <option key={option}>{option}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <label className="sc-builder-range">
+                <span>
+                  Initial Price <b>{initialPrice.toFixed(7)} SOL</b>
+                </span>
+                <input
+                  type="range"
+                  min="0.000001"
+                  max="0.00001"
+                  step="0.0000001"
+                  value={initialPrice}
+                  onChange={(event) =>
+                    setInitialPrice(Number(event.target.value))
+                  }
+                />
+              </label>
+              <label className="sc-builder-range">
+                <span>
+                  Curve Steepness <b>{steepness.toFixed(1)}x</b>
+                </span>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="5"
+                  step="0.1"
+                  value={steepness}
+                  onChange={(event) => setSteepness(Number(event.target.value))}
+                />
+              </label>
+              <label className="sc-builder-range">
+                <span>
+                  Graduation Market Cap Target <b>${target.toLocaleString()}</b>
+                </span>
+                <input
+                  type="range"
+                  min="18000"
+                  max="750000"
+                  step="1000"
+                  value={target}
+                  onChange={(event) => setTarget(Number(event.target.value))}
+                />
+              </label>
+            </section>
+
+            <section className="sc-builder-section sc-social-section">
+              <div className="sc-builder-section-head">
+                <span className="sc-section-glyph">↗</span>
+                <div>
+                  <h2>
+                    Social Links <small>(optional)</small>
+                  </h2>
+                  <p>Help traders find your community</p>
+                </div>
+              </div>
+              <label>
+                <span>◎</span>
+                <input placeholder="Website URL" type="url" />
+              </label>
+              <label>
+                <span>𝕏</span>
+                <input placeholder="Twitter / X handle" />
+              </label>
+              <label>
+                <span>◉</span>
+                <input placeholder="Telegram link" />
+              </label>
+            </section>
+
+            <div className="sc-launch-submit-bar">
+              <div>
+                <span>EST. DEPLOY COST</span>
+                <strong>0.02 SOL</strong>
+              </div>
+              <div className="sc-launch-submit-actions">
+                <button
+                  className="sc-button sc-button-secondary"
+                  type="button"
+                  onClick={() => setNotice("Draft saved in this preview.")}
+                >
+                  Save as Draft
+                </button>
+                <button
+                  className="sc-button sc-button-primary"
+                  type="button"
+                  onClick={handleLaunch}
+                >
+                  ↗ Launch Token
+                </button>
+              </div>
+              {notice && (
+                <span className="sc-launch-notice" role="status">
+                  {notice}
+                </span>
+              )}
             </div>
-            <div className="sc-aside-status">
-              <span className="sc-live-dot" /> SOLANA MAINNET
+          </form>
+
+          <aside className="sc-live-preview-column">
+            <section className="sc-live-preview">
+              <div className="sc-live-preview-head">
+                <h2>Live Preview</h2>
+                <span>Discover feed</span>
+              </div>
+              <article className="sc-preview-token-card">
+                <div className="sc-preview-token-head">
+                  <span className="sc-preview-token-mark">
+                    {image ? (
+                      <img src={image} alt="" />
+                    ) : (
+                      ticker.slice(0, 1) || "?"
+                    )}
+                  </span>
+                  <div>
+                    <strong>{name || "Apple Curve"}</strong>
+                    <span>${ticker || "AAPLX"}</span>
+                  </div>
+                  <span className="sc-preview-stock-badge">
+                    {tokenType === "Tokenized Stock"
+                      ? `Stocks · ${underlying || "AAPL"}`
+                      : "Memecoin"}
+                  </span>
+                </div>
+                <div className="sc-preview-card-stats">
+                  <span>
+                    Mcap<strong>$0</strong>
+                  </span>
+                  <span>
+                    24h<strong>—</strong>
+                  </span>
+                </div>
+                <div className="sc-progress">
+                  <span style={{ width: "0%" }} />
+                </div>
+                <div className="sc-preview-not-launched">
+                  <i /> Not launched yet
+                </div>
+              </article>
+            </section>
+            <section className="sc-builder-chart-card">
+              <div className="sc-builder-chart-title">
+                <h2>Curve Preview</h2>
+                <span>{customCurve ? "Custom" : preset}</span>
+              </div>
+              <div className="sc-builder-chart-wrap">
+                <span>Price</span>
+                <svg
+                  viewBox="0 0 400 165"
+                  preserveAspectRatio="none"
+                  role="img"
+                  aria-label={`${customCurve ? "Custom" : preset} sample bonding curve`}
+                >
+                  <line x1="8" y1="145" x2="392" y2="145" />
+                  <line x1="8" y1="12" x2="8" y2="145" />
+                  <path d={curvePath} />
+                </svg>
+                <div>
+                  <span>0</span>
+                  <span>Supply</span>
+                </div>
+                <div className="sc-builder-chart-labels">
+                  <span>Low</span>
+                  <span>High</span>
+                </div>
+              </div>
+            </section>
+            <div className="sc-curve-explainer">
+              <span>ⓘ</span>
+              <p>
+                Your curve determines the price trajectory as buyers purchase
+                supply. Steeper curves reward early buyers more.
+              </p>
             </div>
           </aside>
         </div>
+        <footer className="sc-page-foot sc-reference-footer">
+          <span>
+            StockCurve <i>© 2024 All rights reserved</i>
+          </span>
+          <span>
+            <b>Docs</b>
+            <b>Terms</b>
+          </span>
+        </footer>
       </main>
     </div>
   );

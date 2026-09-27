@@ -41,9 +41,9 @@ part of that build, not leave them as an empty template.
 - Product mode: `operate`
 - Audience and cadence: Crypto-native traders and token creators, checking markets and configuring launches throughout the day.
 - Visual world (name + the feeling it creates): Graphite trading terminal — immediate, exact, and quietly alive.
-- Palette family + neutral undertone: Vivid lime over near-black graphite; green and red reserved for market movement.
+- Palette family + neutral undertone: Emerald green over near-black graphite; green and red reserved for market movement.
 - Type treatment: Inter for interface copy; JetBrains Mono for prices, tickers, and tabular lining numerals.
-- Composition: Dense discovery grid and focused four-step launch workbench.
+- Composition: Live-feeling discovery terminal, side-by-side launch form and preview, curve preset marketplace, and portfolio chart with holdings table.
 - Shape language: Crisp compact controls, 6–10px corners, hairline borders, and a single luminous curve motif.
 - Anti-references (defaults this app must not drift toward): Marketing-site hero excess, generic SaaS card stacks, purple gradients, decorative glass effects, and unaligned numeric columns.
 

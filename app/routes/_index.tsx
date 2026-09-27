@@ -2,141 +2,186 @@ import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 
 import {
-  marketTokens,
+  discoverTokens,
   QuoteBadge,
   StockCurveHeader,
   TokenAvatar,
 } from "@/components/stockcurve-app";
 
-const filters = ["All", "SOL", "USDC", "Stocks"] as const;
-const sorts = ["New", "Hot", "Near graduation"] as const;
+type PairFilter = "All" | "SOL" | "USDC" | "Stocks";
+type ActivityFilter = "All" | "New" | "Graduating Soon";
+type SortOrder = "Hot" | "New" | "Graduating Soon";
 
-type Filter = (typeof filters)[number];
-type Sort = (typeof sorts)[number];
+const activity = [
+  { side: "BUY", amount: "2.4 SOL", ticker: "$AAPLX" },
+  { side: "SELL", amount: "0.8 SOL", ticker: "$SPNK" },
+  { side: "BUY", amount: "5.1 SOL", ticker: "$TSLAX" },
+  { side: "BUY", amount: "1.2 SOL", ticker: "$NVDAX" },
+  { side: "SELL", amount: "3.6 SOL", ticker: "$DOGEC" },
+  { side: "BUY", amount: "0.6 SOL", ticker: "$GNS" },
+  { side: "SELL", amount: "1.9 SOL", ticker: "$MOONX" },
+];
 
 export function meta() {
   return [
     { title: "StockCurve — Discover" },
     {
       name: "description",
-      content: "Discover tokens with creator-designed bonding curves.",
+      content: "Discover and trade creator-designed bonding curves on Solana.",
     },
   ];
 }
 
 export default function DiscoverRoute() {
-  const [pairFilter, setPairFilter] = useState<Filter>("All");
-  const [sort, setSort] = useState<Sort>("Hot");
+  const [pair, setPair] = useState<PairFilter>("All");
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>("All");
+  const [sort, setSort] = useState<SortOrder>("Hot");
+  const [showAll, setShowAll] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("search") ?? "";
   const tokens = useMemo(() => {
-    const visible = marketTokens.filter((token) => {
+    const visible = discoverTokens.filter((token) => {
       const pairMatch =
-        pairFilter === "All" ||
-        (pairFilter === "Stocks"
-          ? token.pair.endsWith("x")
-          : token.pair === pairFilter);
-      const queryMatch = `${token.symbol} ${token.name}`
+        pair === "All" ||
+        (pair === "Stocks" ? token.pair.endsWith("x") : token.pair === pair);
+      const activityMatch =
+        activityFilter === "All" ||
+        (activityFilter === "New"
+          ? token.isNew
+          : token.progress >= 80 && !token.graduated);
+      const queryMatch = `${token.symbol} ${token.name} ${token.pair}`
         .toLowerCase()
         .includes(query.toLowerCase());
-      return pairMatch && queryMatch;
+      return pairMatch && activityMatch && queryMatch;
     });
-    if (sort === "Hot") return visible.sort((a, b) => b.change - a.change);
-    if (sort === "Near graduation")
+    if (sort === "Hot") return visible;
+    if (sort === "Graduating Soon")
       return visible.sort((a, b) => b.progress - a.progress);
-    return visible;
-  }, [pairFilter, query, sort]);
+    return visible.sort(
+      (a, b) => Number(Boolean(b.isNew)) - Number(Boolean(a.isNew)),
+    );
+  }, [activityFilter, pair, query, sort]);
+  const displayed =
+    showAll || query || pair !== "All" || activityFilter !== "All"
+      ? tokens
+      : tokens.slice(0, 8);
 
   return (
     <div className="sc-app-shell">
       <StockCurveHeader active="Discover" />
-      <main className="sc-page sc-discover">
-        <section className="sc-hero">
-          <div className="sc-hero-copy">
-            <div className="sc-eyebrow">
-              <span className="sc-live-dot" /> SOLANA TOKEN LAUNCHPAD
-            </div>
+      <main className="sc-discover-page">
+        <section className="sc-discover-hero">
+          <div className="sc-discover-intro">
+            <span className="sc-mainnet-label">
+              <i /> MARKET PREVIEW · SOLANA MAINNET
+            </span>
             <h1>
-              Every token starts
-              <br />
-              with a <em>curve.</em>
+              Launch a token on a curve <em>you design</em>
             </h1>
-            <Link className="sc-button sc-button-primary" to="/launch">
-              Launch a token <span aria-hidden="true">↗</span>
-            </Link>
+            <p>
+              Bonding curve launches for memecoins and tokenized stock-style
+              assets. No presale, no team allocation — fair curves that graduate
+              to DEX liquidity.
+            </p>
+            <div className="sc-discover-ctas">
+              <Link to="/launch" className="sc-button sc-button-primary">
+                <span aria-hidden="true">↗</span> Launch token
+              </Link>
+              <Link to="/presets" className="sc-button sc-button-secondary">
+                View presets
+              </Link>
+            </div>
           </div>
-          <div className="sc-hero-mark" aria-hidden="true">
-            <svg viewBox="0 0 420 240" fill="none">
-              <path
-                className="sc-curve-glow"
-                d="M14 218C84 217 113 204 163 177C238 137 269 66 403 19"
-              />
-              <path
-                className="sc-curve-line"
-                d="M14 218C84 217 113 204 163 177C238 137 269 66 403 19"
-              />
-              <circle cx="403" cy="19" r="4" />
-            </svg>
-          </div>
-          <div className="sc-hero-stats">
+          <div className="sc-platform-stats">
             <div>
-              <strong>12,486</strong>
               <span>Tokens launched</span>
+              <strong>12,482</strong>
             </div>
             <div>
-              <strong>$28.4M</strong>
-              <span>Volume · 24h</span>
+              <span>Volume (24h)</span>
+              <strong className="sc-stat-green">$84.2M</strong>
             </div>
             <div>
-              <strong>318</strong>
-              <span>Graduated</span>
+              <span>Graduated to DEX</span>
+              <strong>341</strong>
+            </div>
+            <div>
+              <span>Active traders</span>
+              <strong>28.6K</strong>
             </div>
           </div>
         </section>
 
-        <section className="sc-market" aria-label="Token market">
-          <div className="sc-market-head">
-            <div className="sc-market-title">
-              <span className="sc-live-dot" /> Live market{" "}
-              <span className="sc-market-count">{tokens.length} tokens</span>
-            </div>
+        <section className="sc-tape" aria-label="Recent trade activity">
+          <div className="sc-tape-track">
+            {[...activity, ...activity].map((trade, index) => (
+              <span
+                key={`${trade.ticker}-${index}`}
+                className={trade.side === "BUY" ? "positive" : "negative"}
+              >
+                {trade.side === "BUY" ? "↑" : "↓"} {trade.side} {trade.amount} →{" "}
+                {trade.ticker}
+                <i>·</i>
+              </span>
+            ))}
           </div>
-          <div className="sc-market-tools">
-            <div className="sc-filter-group" aria-label="Quote pair">
-              {filters.map((filter) => (
+        </section>
+
+        <section className="sc-discover-market" aria-label="Discover tokens">
+          <div className="sc-discover-filterbar">
+            <div className="sc-filter-group" aria-label="Quote pair filters">
+              {(["All", "SOL", "USDC", "Stocks"] as const).map((option) => (
                 <button
-                  type="button"
-                  key={filter}
-                  className={pairFilter === filter ? "selected" : ""}
-                  aria-pressed={pairFilter === filter}
-                  onClick={() => setPairFilter(filter)}
-                >
-                  {filter}
-                </button>
-              ))}
-            </div>
-            <div className="sc-sort-group" aria-label="Sort tokens">
-              <span>Sort</span>
-              {sorts.map((option) => (
-                <button
-                  type="button"
                   key={option}
-                  className={sort === option ? "selected" : ""}
-                  aria-pressed={sort === option}
-                  onClick={() => setSort(option)}
+                  type="button"
+                  aria-pressed={pair === option}
+                  className={pair === option ? "selected" : ""}
+                  onClick={() => setPair(option)}
                 >
                   {option}
                 </button>
               ))}
             </div>
+            <div
+              className="sc-filter-group sc-activity-filters"
+              aria-label="Activity filters"
+            >
+              {(["New", "Graduating Soon"] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  aria-pressed={activityFilter === option}
+                  className={activityFilter === option ? "selected" : ""}
+                  onClick={() =>
+                    setActivityFilter(
+                      activityFilter === option ? "All" : option,
+                    )
+                  }
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+            <label className="sc-hot-sort">
+              <span>Sort:</span>
+              <select
+                value={sort}
+                onChange={(event) => setSort(event.target.value as SortOrder)}
+              >
+                <option>Hot</option>
+                <option>New</option>
+                <option>Graduating Soon</option>
+              </select>
+            </label>
           </div>
-          {tokens.length ? (
+
+          {displayed.length ? (
             <div className="sc-token-grid">
-              {tokens.map((token) => (
+              {displayed.map((token) => (
                 <Link
+                  key={`${token.name}-${token.symbol}`}
                   className="sc-token-card"
                   to={`/pool/${token.symbol.toLowerCase()}`}
-                  key={token.symbol}
                 >
                   <div className="sc-token-card-top">
                     <TokenAvatar token={token} />
@@ -144,61 +189,89 @@ export default function DiscoverRoute() {
                       <strong>{token.name}</strong>
                       <span>${token.symbol}</span>
                     </div>
-                    <QuoteBadge pair={token.pair} />
+                    {token.graduated ? (
+                      <span className="sc-graduated-pill">✓ Graduated</span>
+                    ) : token.isNew ? (
+                      <span className="sc-new-pill">New</span>
+                    ) : token.pair.endsWith("x") ? (
+                      <QuoteBadge pair={token.pair} />
+                    ) : null}
                   </div>
+                  {token.pair.endsWith("x") && (
+                    <span className="sc-token-sector">
+                      Stocks · {token.pair.slice(0, -1)}
+                    </span>
+                  )}
                   <div className="sc-token-price-row">
-                    <strong className="sc-number">{token.price}</strong>
+                    <strong className="sc-number">{token.cap}</strong>
                     <span
                       className={token.change >= 0 ? "positive" : "negative"}
                     >
-                      {token.change > 0 ? "+" : ""}
-                      {token.change.toFixed(2)}%
+                      {token.change > 0 ? "▲" : "▼"}{" "}
+                      {Math.abs(token.change).toFixed(1)}%
                     </span>
                   </div>
-                  <div className="sc-progress-label">
-                    <span>
-                      {token.graduated ? "Graduated" : "Curve progress"}
-                    </span>
-                    <span className="sc-number">{token.progress}%</span>
+                  <div
+                    className={`sc-discover-spark ${token.change < 0 ? "down" : ""}`}
+                    aria-hidden="true"
+                  >
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                    <i />
                   </div>
                   <div
                     className={`sc-progress ${token.graduated ? "graduated" : ""}`}
                   >
                     <span style={{ width: `${token.progress}%` }} />
                   </div>
-                  <div className="sc-token-card-foot">
-                    <span>
-                      MC <b className="sc-number">{token.cap}</b>
-                    </span>
-                    <span>
-                      VOL <b className="sc-number">{token.volume}</b>
-                    </span>
-                    <span className="sc-open-arrow" aria-hidden="true">
-                      ↗
-                    </span>
+                  <div className="sc-discover-progress-foot">
+                    {token.graduated
+                      ? "Trading on DEX"
+                      : `${token.progress}% to graduation`}
                   </div>
                 </Link>
               ))}
             </div>
           ) : (
             <div className="sc-empty-market">
-              <span>No tokens match that search.</span>
+              <span>No tokens match those filters.</span>
               <button
                 type="button"
                 onClick={() => {
+                  setPair("All");
+                  setActivityFilter("All");
                   setSearchParams({});
-                  setPairFilter("All");
                 }}
               >
                 Clear filters
               </button>
             </div>
           )}
+          {tokens.length > 8 &&
+            !showAll &&
+            !query &&
+            pair === "All" &&
+            activityFilter === "All" && (
+              <button
+                type="button"
+                className="sc-load-more"
+                onClick={() => setShowAll(true)}
+              >
+                Load more tokens
+              </button>
+            )}
         </section>
-        <footer className="sc-page-foot">
-          <span>STOCKCURVE PROTOCOL</span>
+        <footer className="sc-page-foot sc-reference-footer">
           <span>
-            POWERED BY METEORA DBC <i>·</i> SOLANA
+            StockCurve <i>© 2024 All rights reserved</i>
+          </span>
+          <span>
+            <b>Docs</b>
+            <b>Terms</b>
           </span>
         </footer>
       </main>

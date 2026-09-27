@@ -233,8 +233,8 @@ export function StockCurvePool({ symbol }: { symbol: string }) {
                       y1="0"
                       y2="1"
                     >
-                      <stop offset="0%" stopColor="#a7ff3f" stopOpacity=".18" />
-                      <stop offset="100%" stopColor="#a7ff3f" stopOpacity="0" />
+                      <stop offset="0%" stopColor="#32f27b" stopOpacity=".18" />
+                      <stop offset="100%" stopColor="#32f27b" stopOpacity="0" />
                     </linearGradient>
                   </defs>
                   {[0, 1, 2, 3].map((line) => (

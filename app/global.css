@@ -6,6 +6,7 @@
 @import "@agent-native/core/styles/agent-native.css";
 @import "@agent-native/toolkit/styles.css";
 @import "@agent-native/agentkit/react/styles.css";
+@import "./stockcurve-pages.css";
 
 @source "./**/*.{ts,tsx}";
 
@@ -274,7 +275,7 @@
   --card-foreground: 210 20% 91%;
   --popover: 225 20% 9%;
   --popover-foreground: 210 20% 91%;
-  --primary: 82 100% 60%;
+  --primary: 145 89% 58%;
   --primary-foreground: 225 24% 5%;
   --secondary: 225 16% 12%;
   --secondary-foreground: 210 18% 85%;
@@ -286,16 +287,16 @@
   --destructive-foreground: 0 0% 100%;
   --border: 220 14% 16%;
   --input: 220 14% 18%;
-  --ring: 82 100% 60%;
+  --ring: 145 89% 58%;
   --radius: 0.55rem;
   --sidebar-background: 225 20% 7%;
   --sidebar-foreground: 218 10% 57%;
-  --sidebar-primary: 82 100% 60%;
+  --sidebar-primary: 145 89% 58%;
   --sidebar-primary-foreground: 225 24% 5%;
   --sidebar-accent: 225 16% 12%;
   --sidebar-accent-foreground: 210 20% 91%;
   --sidebar-border: 220 14% 16%;
-  --sidebar-ring: 82 100% 60%;
+  --sidebar-ring: 145 89% 58%;
 }
 
 html,
@@ -330,7 +331,7 @@ textarea:focus-visible {
   background:
     radial-gradient(ellipse at 50% -28%, rgb(160 255 40 / 5%), transparent 44%),
     #090b0c;
-  --sc-lime: #a7ff3f;
+  --sc-lime: #32f27b;
   --sc-green: #62d890;
   --sc-red: #fa6d74;
   --sc-border: #202427;
@@ -383,7 +384,7 @@ textarea:focus-visible {
   width: 28px;
   height: 28px;
   color: var(--sc-lime);
-  filter: drop-shadow(0 0 5px rgb(167 255 63 / 32%));
+  filter: drop-shadow(0 0 5px rgb(50 242 123 / 32%));
 }
 .sc-nav {
   display: flex;
@@ -413,7 +414,7 @@ textarea:focus-visible {
   height: 2px;
   background: var(--sc-lime);
   content: "";
-  box-shadow: 0 0 12px rgb(167 255 63 / 38%);
+  box-shadow: 0 0 12px rgb(50 242 123 / 38%);
 }
 .sc-global-search {
   display: flex;
@@ -453,26 +454,30 @@ textarea:focus-visible {
   align-items: center;
   gap: 9px;
   padding: 0 12px;
-  border: 1px solid #2b3131;
+  border: 1px solid #32f27b;
   border-radius: 7px;
-  background: #101414;
-  color: #e6e9e3;
-  font-size: 11px;
-  font-weight: 600;
+  background: #32f27b;
+  color: #06150b;
+  font-family: var(--sc-number);
+  font-size: 10px;
+  font-weight: 700;
   cursor: pointer;
-  transition:
-    border-color 140ms ease,
-    background 140ms ease;
+  transition: border-color 140ms ease, background 140ms ease;
 }
 .sc-wallet:hover {
-  border-color: #566447;
-  background: #151b14;
+  border-color: #78f5a5;
+  background: #78f5a5;
+}
+.sc-wallet.disconnected .sc-wallet-dot {
+  display: none;
 }
 .sc-wallet.connected {
-  border-color: rgb(167 255 63 / 38%);
+  border-color: rgb(50 242 123 / 38%);
 }
 .sc-wallet.connecting {
-  color: #b3baae;
+  border-color: #287b48;
+  background: #173322;
+  color: #91eaae;
   cursor: wait;
 }
 .sc-wallet-dot,
@@ -483,15 +488,16 @@ textarea:focus-visible {
   flex: 0 0 auto;
   border-radius: 50%;
   background: var(--sc-lime);
-  box-shadow: 0 0 9px rgb(167 255 63 / 50%);
+  box-shadow: 0 0 9px rgb(50 242 123 / 50%);
 }
 .sc-wallet.connected .sc-wallet-dot {
   background: #62d890;
   box-shadow: 0 0 8px rgb(98 216 144 / 45%);
 }
 .sc-wallet.unavailable {
-  border-color: rgb(250 109 116 / 35%);
-  color: #ed9a9e;
+  border-color: #8d363a;
+  background: #39191c;
+  color: #ff9295;
 }
 .sc-wallet.unavailable .sc-wallet-dot {
   background: var(--sc-red);
@@ -587,8 +593,8 @@ textarea:focus-visible {
   color: #12180c;
 }
 .sc-button-primary:hover {
-  border-color: #c3ff81;
-  background: #c3ff81;
+  border-color: #8affb5;
+  background: #8affb5;
 }
 .sc-button-secondary {
   border-color: #303738;
@@ -617,18 +623,18 @@ textarea:focus-visible {
   stroke-linecap: round;
 }
 .sc-curve-glow {
-  stroke: rgb(167 255 63 / 19%);
+  stroke: rgb(50 242 123 / 19%);
   stroke-width: 19px;
   filter: blur(11px);
 }
 .sc-curve-line {
-  stroke: #a7ff3f;
+  stroke: #32f27b;
   stroke-width: 2.5px;
-  filter: drop-shadow(0 0 7px rgb(167 255 63 / 37%));
+  filter: drop-shadow(0 0 7px rgb(50 242 123 / 37%));
 }
 .sc-hero-mark circle {
   fill: var(--sc-lime);
-  filter: drop-shadow(0 0 7px rgb(167 255 63 / 85%));
+  filter: drop-shadow(0 0 7px rgb(50 242 123 / 85%));
 }
 .sc-hero-stats {
   position: absolute;
@@ -851,7 +857,7 @@ textarea:focus-visible {
   background: radial-gradient(circle at 32% 20%, #ca9bfa, #694a9c 48%, #221c35);
 }
 .sc-token-avatar.nvidia {
-  background: radial-gradient(circle at 38% 32%, #a7ff3f, #458847 45%, #1a3020);
+  background: radial-gradient(circle at 38% 32%, #32f27b, #458847 45%, #1a3020);
 }
 .sc-token-avatar.soda {
   background: radial-gradient(circle at 40% 30%, #ee7da5, #b13e75 48%, #351d35);
@@ -956,7 +962,7 @@ textarea:focus-visible {
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #7cb52c, #b4ff4f);
-  box-shadow: 0 0 9px rgb(167 255 63 / 24%);
+  box-shadow: 0 0 9px rgb(50 242 123 / 24%);
 }
 .sc-progress.graduated > span {
   background: #64d895;
@@ -1323,7 +1329,7 @@ textarea:focus-visible {
   stroke-dasharray: 3 5;
 }
 .sc-chart-fill {
-  fill: rgb(167 255 63 / 5%);
+  fill: rgb(50 242 123 / 5%);
 }
 .sc-chart-stroke {
   fill: none;
@@ -1331,7 +1337,7 @@ textarea:focus-visible {
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0 0 5px rgb(167 255 63 / 24%));
+  filter: drop-shadow(0 0 5px rgb(50 242 123 / 24%));
 }
 .sc-chart-point {
   fill: #10150c;
@@ -1599,7 +1605,7 @@ textarea:focus-visible {
   width: 42px;
   color: var(--sc-lime);
   opacity: 0.8;
-  filter: drop-shadow(0 0 8px rgb(167 255 63 / 30%));
+  filter: drop-shadow(0 0 8px rgb(50 242 123 / 30%));
 }
 .sc-aside-status {
   display: flex;
@@ -1690,7 +1696,7 @@ textarea:focus-visible {
   border-radius: 15px;
   background: #111611;
   color: var(--sc-lime);
-  filter: drop-shadow(0 0 11px rgb(167 255 63 / 13%));
+  filter: drop-shadow(0 0 11px rgb(50 242 123 / 13%));
 }
 .sc-placeholder-mark svg {
   width: 37px;
@@ -1927,7 +1933,7 @@ textarea:focus-visible {
 .sc-chart-range button:hover,
 .sc-chart-range button.selected {
   background: #182017;
-  color: #b1ff74;
+  color: #7efca9;
 }
 .sc-pool-chart-wrap {
   position: relative;
@@ -1959,12 +1965,12 @@ textarea:focus-visible {
 }
 .sc-pool-price-line {
   fill: none;
-  stroke: #a7ff3f;
+  stroke: #32f27b;
   stroke-width: 2.4;
   stroke-linecap: round;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
-  filter: drop-shadow(0 0 5px rgb(167 255 63 / 22%));
+  filter: drop-shadow(0 0 5px rgb(50 242 123 / 22%));
 }
 .sc-pool-price-point {
   fill: #c4ff8c;
@@ -1984,7 +1990,7 @@ textarea:focus-visible {
   padding: 13px 15px 12px;
 }
 .sc-pool-section-head > .sc-green-text {
-  color: #a7ff3f;
+  color: #32f27b;
   font-size: 10px;
 }
 .sc-pool-progress {
@@ -2240,8 +2246,8 @@ textarea:focus-visible {
   font-size: 10px;
 }
 .sc-trade-submit:hover {
-  border-color: #c3ff81;
-  background: #c3ff81;
+  border-color: #8affb5;
+  background: #8affb5;
 }
 .sc-trade-submit.sell {
   border-color: #fb6f73;
@@ -2312,7 +2318,7 @@ textarea:focus-visible {
 .sc-pool-demo-note svg {
   width: 14px;
   height: 14px;
-  color: #92d859;
+  color: #43e888;
 }
 
 @media (max-width: 980px) {
